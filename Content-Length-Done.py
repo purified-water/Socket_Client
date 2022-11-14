@@ -4,7 +4,7 @@ import urllib.parse
 
 
 
-def readChunk(response, f):
+def readChunk(response, f, extName):
     
     #Đọc header thiếu (ban đầu 113) nên cộng thêm thành 357 ->đúng
     endHeader = "\r\n\r\n"
@@ -14,7 +14,11 @@ def readChunk(response, f):
     length = 0
 
     while True:
-        chunk = client.recv(4096)
+        chunk = client.recv(8192)
+        if extName == 'html':
+            message += chunk
+            print(chunk)
+            break;
         if not chunk:
             break
         else:
@@ -24,11 +28,10 @@ def readChunk(response, f):
     TESTheader =  message.split(endHeader.encode())[0]
     body = message.split(endHeader.encode())[1]
 
-    print(len(TESTheader))
+    print("Header length :%d" %len(TESTheader))
 
-    response = client.recv(len(TESTheader))
+    # response = client.recv(len(TESTheader))
 
-    print(response)
 
     f.write(body)
     f.close()
@@ -78,10 +81,14 @@ client.connect((target_host,target_port))
 # send some data 
 # request = "GET /index.html/ HTTP/1.1\r\nHost:%s\r\n\r\n" % target_host
 
-request = "GET %s HTTP/1.1\r\nHost:%s\r\n\r\n" %(target_path,target_host)
-header  = "HEAD %s HTTP/1.1\r\nHost:%s\r\n\r\n" %(target_path,target_host)
+# request = "GET %s HTTP/1.1\r\nHost:%s\r\n\r\n" %(target_path,target_host)
+# header  = "HEAD %s HTTP/1.1\r\nHost:%s\r\n\r\n" %(target_path,target_host)
+request = "GET / HTTP/1.1\r\nHost:%s\r\n\r\n" %target_host
+header = "HEAD / HTTP/1.1\r\nHost:%s\r\n\r\n" %target_host
 
-client.send(request.encode())  
+
+
+client.sendall(request.encode())  
 
 # receive some data 
 # tim so byte can receive trong nay content-length chunk transfer
@@ -89,12 +96,15 @@ client.send(request.encode())
 
 
 
+if target_path == '':
+    filename = 'index.html'
+else :
+    filename = target_path.replace('/','_') + '.' + extName
 
-filename = target_host + '.' + extName
 f = open(filename , "wb");
-# f.write(response)
+
 response = b''
-readChunk(response, f)
+readChunk(response, f, extName)
 
 
 client.close()
